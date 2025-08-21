@@ -2,18 +2,31 @@ import socket
 import game_logic as game
 import threading
 
+def handle_server():
+    cmd = input()
+    if input() == 'exit':
+        print('exiting')
+        server.close()
+
+threading.Thread(target = handle_server, daemon = True).start()
 
 def winning_info():
-    if game.check_win(board) == 'X':
-        players[0][0].send("You won!".encode())
-        game.display(board)
+    result = game.check_win(board)
+    if result == 'X':
+        print(f"{game.check_win(board)} won")
+        players[0][0].send("won".encode())
+        players[1][0].send("lost".encode())
+        return 'over'
         
-    elif game.check_win(board) == 'O':
-        players[1][0].send("You won!".encode())
-        game.display(board)
-    elif game.check_win(board) == 'draw':
+    elif result == 'O':
+        players[0][0].send("lost".encode())
+        players[1][0].send("won".encode())
+        return 'over'
+
+    elif result == 'draw':
         for p in players:
             p[0].send("The game is a tie!".encode())
+            return 'over'
     
 
 logging = True
@@ -23,7 +36,7 @@ board = game.board
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(('localhost', 8000))
-server.listen(1)
+server.listen(2)
 
 players = [server.accept() for _ in range(2)]
 symbols = ['X', 'O']
@@ -33,72 +46,19 @@ def game_loop(client, sym):
     while True:
         player = client.recv(1024).decode()
         if game.validate(board, player):
+            game.update(board, player, sym)
+            game.display(board)
+            info = winning_info()
+            print(info)
+            if info == 'over':
+                return 'over'
             client.send("valid move".encode())
             break
         else: player = client.send("Invalid move".encode())
 
-    game.update(board, player, sym)
-    game.display(board)
-    winning_info()
+
 
 for i in range(9):
-    for i in range(2):
-        thread = threading.Thread(target=game_loop, args=(players[i][0], symbols[i]))
-        thread.start()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def handle_client(client_socket, address, player = {}):
-#     player[address] = 'X' if player else 'O'
-#     print(f"Player {len(player)} connected")
-#     if logging and len(player) == 2:
-#         game.display(board)
-#     while True:
-#         move = client_socket.recv(1024).decode()
-#         if game.validate(board, move):
-#             game.update(board, move, player[address])
-#             break
-#         else:
-#             client_socket.send("The move has been occupied".encode())
-
-
-#     print(f"Player {player[address]} disconnected")
-
-#     client_socket.close()
-
-
-
-
-
-
-
-
-
-
-
-# if logging: print("Waiting for users to connect")
-
-# for i in range(2):
-#     client_socket, addr = server.accept()
-#     thread = threading.Thread(target=handle_client, args=(client_socket, addr))
-#     thread.start()
+    result = game_loop(players[i%2][0], symbols[i%2])
+    if result == 'over':
+        break
