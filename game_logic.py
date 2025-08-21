@@ -1,4 +1,4 @@
-board = ['#']* 9
+board = ['#'] * 9
 game_name = 'Tic-Tac-Toe'
 
 def display(board):
@@ -11,7 +11,7 @@ def display(board):
     
 def validate(board, move)->bool:
     try:
-        move = int(move)
+        move = int(move) - 1
     except:
         return False
     return board[move] == '#'
@@ -30,10 +30,16 @@ def check_win(board)->['draw', 'X', 'O']:
         if all(Y_wins): return 'O'
 
 def update(board, move, player)->['draw', 'X', 'O', 'space taken']: #player enter 1 ahead of index
+    move = int(move) - 1
+    board[move] = player
+
+
+
+def test(board, move, player)->['draw', 'X', 'O', 'space taken']: #player enter 1 ahead of index
 
     move = int(move) - 1
     if validate(board, move):
-        board[move-1] = player
+        board[move] = player
     else:
         return 'taken', f'The space has been taken by player {player}'
     
